@@ -1,0 +1,43 @@
+[SCE.COM-products]
+name=SCE.COM Program Repo Products EL 6 - $basearch
+baseurl=http://vclx00927.sce.com/sc3repo/el/6/products/$basearch
+enabled=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/sc3repopubkey.pub
+
+[SCE.COM-deps]
+name=SCE.COM Program Repo Dependencies El 6 - $basearch
+baseurl=http://vclx00927.sce.com/el/6/dependencies/$basearch
+gpgkey=file:///etc/pki/rpm-gpg/sc3repopubkey.pub
+enabled=0
+gpgcheck=1
+
+[SCE.COM-devel]
+name=SCE.COM Program Repo Devel El 6 - $basearch
+baseurl=http://vclx00927.sce.com/el/6/devel/$basearch
+gpgkey=file:///etc/pki/rpm-gpg/sc3repopubkey.pub
+enabled=0
+gpgcheck=1
+
+[SCE.COM-products-source]
+name=SCE.COM Program Products El 6 - $basearch - Source
+baseurl=http://vclx00927.sce.com/el/6/products/SRPMS
+gpgkey=file:///etc/pki/rpm-gpg/sc3repopubkey.pub
+failovermethod=priority
+enabled=0
+gpgcheck=1
+
+[SCE.COM-deps-source]
+name=SCE.COM Program Source Dependencies El 6 - $basearch - Source
+baseurl=http://vclx00927.sce.com/el/6/dependencies/SRPMS
+gpgkey=file:///etc/pki/rpm-gpg/sc3repopubkey.pub
+enabled=0
+gpgcheck=1
+
+[SCE.COM-devel-source]
+name=SCE.COM Program Devel El 6 - $basearch - Source
+baseurl=http://vclx00927.sce.com/el/6/devel/SRPMS
+gpgkey=file:///etc/pki/rpm-gpg/sc3repopubkey.pub
+enabled=0
+gpgcheck=1
+
