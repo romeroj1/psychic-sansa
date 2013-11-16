@@ -16,6 +16,7 @@ Info:     "jrbackup" can be used to automatically backup given folder locations
 import ConfigParser
 import os
 import tarfile
+import logging
 import logging.handlers
 import datetime
 import time
@@ -23,12 +24,13 @@ from optparse import OptionParser
 import sendemail
 
 #Usage and Description
+myversion = "jrbackup-1.1"
 usage = "usage: %prog [options]"
 mydescription = ('backup.py is intended to be a simple yet powerful backup tool. ' +
 'To backup your system edit the backup.conf file so that it has all the correct information, ' + 
 'afterwards set backup.py to run automatically with cron or crontab.')
 
-myversion = "jrbackup-1.1"
+
 
 def splitNStripArgs(inputStr, charToStrip):
     data = inputStr.split(charToStrip)
@@ -49,23 +51,27 @@ config = ConfigParser.ConfigParser()
 config.read(confpath + "/backup.conf")
 backupsize = config.getint("Config","MaxLogFileSize")
 numbackups = config.getint("Config","NumLogs")
-logfile = config.get("Config","LogFile")
 backuploc  = config.get("Config","BackupLocation")
 sectionList = config.sections()
 full_archive_name = ".Full-backup-" + datetime.datetime.now().strftime("%m%d%Y%H%M")
 inc_archive_name = backuploc  + "\Inc-backup-" + datetime.datetime.now().strftime("%m%d%Y%H%M")
 email = config.get('Config', 'SendNotification')
-
-
-
+logfile = config.get('Config','LogFile')
 ##########################
 # Setup logging
 ##########################
-my_logger = logging.getLogger('MyLogger')
-my_logger.setLevel(logging.INFO)
+# Setup handler
 handler = logging.handlers.RotatingFileHandler(logfile, maxBytes=backupsize, backupCount=numbackups)
+handler.setLevel(logging.INFO)
+# Logging Format
+formatter = logging.Formatter('%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
+handler.setFormatter(formatter)
+# create logger
+my_logger = logging.getLogger(__name__)
+my_logger.setLevel(logging.INFO)
+# Add handler to logger
 my_logger.addHandler(handler)
-#now = time.time()
+
 now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 
 def make_incrementalbkp():
@@ -79,42 +85,31 @@ def make_new_backup(strname,strdir,tarType,tarExt):
     The backups are named by date.
     '''    
     # Do the job
-    my_logger.info("-----------------------------------------------------------------------------------------")
-    my_logger.info("Starting backup")
-    my_logger.info("Time: " + now)
+    my_logger.info('Starting backup for %s' %strdir)
     
     try:
         #create a tar file and open it with gz compression                    
         archiveName = backuploc + "\\" + strname + full_archive_name + tarExt
-        print ('Created tar file %s ' %archiveName )
         archive = tarfile.open(archiveName, tarType)
- 
-        print '-'*50
+        my_logger.debug('Created tar file %s ' % archiveName) 
+        #print '-'*50
         fileCount = 0
        
-        print 'Compressing', strdir
-        my_logger.info('Compressing ' + strdir)
+        my_logger.debug('Compressing ' + strdir)
         fileCount += 1
         archive.add(strdir)
-        my_logger.info('adding to archive %s ' % strdir )
-        my_logger.info("-----------------------------------------------------------------------------------------")
-        my_logger.info("Backup Completed")
-        strtime = "Time: " + now
-        my_logger.info(strtime)
+        my_logger.debug('adding to archive %s ' % strdir )
+        my_logger.info("Backup Completed for %s" % strdir)
         archive.close()
     except OSError:
-        strMessage = 'Could not compress ' + strdir 
-        print strMessage
-        my_logger.info(strMessage)
+        my_logger.exception('Could not compress %s ' % strdir)
                  
 def cleanup_Backups(strBkploc,strSection):
     '''
     Deletes old backups
     '''
     # Do the job
-    my_logger.info("-----------------------------------------------------------------------------------------")
     my_logger.info("Start Clean Up of Old Backups...")
-    my_logger.info("Time: " + now)
     
     for dirname, dirnames, filenames in os.walk(strBkploc):
         for name in filenames:
@@ -128,12 +123,9 @@ def cleanup_Backups(strBkploc,strSection):
                 lastmodDate = time.strftime("%m-%d-%Y", modDate)
                 expDate = returnRetentionperiod(config.getint(strSection, "retention"))            
                 if  expDate > lastmodDate:
-                    delete_Oldbackups(logfile)                                        
+                    delete_Oldbackups(logFile)                                        
     
     my_logger.info("Completed Cleaning up old Backups...")
-    strtime = "Time: " + now
-    my_logger.info(strtime)
-    my_logger.info("-----------------------------------------------------------------------------------------")
     
 def main():
     '''
@@ -177,7 +169,7 @@ def main():
                 if options.incremental:
                     print ('Do something here in future')
     
-    print 'Work Completed, pls check results'
+    my_logger.info('Work Completed, pls check results')
     sendEmail('g')
     #my_logger.info('Work Completed, pls check results')
 
@@ -192,9 +184,7 @@ def delete_Oldbackups(strPath):
             my_logger.info("deleting: " + strPath)                                                                                        
             #print os.stat(f).st_mtime
     except OSError:
-        strMessage = 'Error deleting file: ' + strPath 
-        print strMessage
-        my_logger.info(strMessage)
+        my_logger.exception('Error deleting file: %s' % strPath)
         
 def returnRetentionperiod(bkpretention):
     '''
@@ -215,15 +205,10 @@ def returnRetentionperiod(bkpretention):
 def showAffecteditems(strName):
     '''
     Just list files or folders that will be affected
-    '''             
-    strMsg = 'Working on: %s' % strName
-    print strMsg
-    my_logger.info(strMsg)
-    strMsg1 = 'The following files or folders will be affected:' 
-    print strMsg1
-    my_logger.info(strMsg1)
-    print strName
-    my_logger.info(strName)
+    '''              
+    my_logger.debug('Working on: %s' % strName)
+    my_logger.debug('The following files or folders will be affected:')
+    my_logger.debug(strName)
                 
 def sendEmail(option):
     '''
